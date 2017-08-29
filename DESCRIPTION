@@ -1,0 +1,12 @@
+Package: easyGWAS
+Title: easyGWAS
+Version: 1.0
+Date: 2016-10-11
+Author: Fernando Brito Lopes
+Maintainer: Fernando Brito Lopes <camult@gmail.com>
+Depends: R (>= 3.1), data.table, lattice, qqman, pbapply
+Description: This R interface to perform GWAS using Factored Spectrally Transformed Linear Mixed Models (FaST-LMM). FaST-LMM, which stands for Factored Spectrally Transformed Linear Mixed Models is a program for performing single-SNP and SNP-set genome-wide association studies (GWAS) on extremely large data sets. It runs on both Windows and Linux systems, and has been tested on data sets with over 120,000 individuals.
+LazyData: true
+License: GPL-3
+Archs: i386, x64
+RoxygenNote: 6.0.1
