@@ -31,7 +31,7 @@ ls(package:easyGWAS)
 ## Usage
 
 ```r
-fastlmmGWAS(formula = NULL, genoFileName, phenFileName, MarkerType, IDname,
+fastlmmGWAS(formula = NULL, genoFileName, phenFileName, IDname,
   mapFileName = NULL, nPC = 0, useG = FALSE, maf = 0.01,
   covariate = NULL, rmNonP = TRUE, rmMAF = TRUE, rSrcDir = NULL,
   phenName = NULL, MarkerRow = TRUE)
@@ -45,7 +45,6 @@ Argument      |Description
 ```formula```     |     A formula specifying the model.
 ```genoFileName```     |     It is the name of markers file with its extension, i.e., "datafile.txt"
 ```phenFileName```     |     It is the name of phenotypes file with its extension, i.e., "phenfile.txt"
-```MarkerType```     |     Use "SNP" or "AFLP".
 ```IDname```     |     The name of the trait.
 ```mapFileName```     |     It is the name of map file with its extension, i.e., "mapfile.txt"
 ```nPC```     |     Number of principal components if any.
@@ -53,7 +52,7 @@ Argument      |Description
 ```maf```     |     A value indicating the minor allele frequency.
 ```covariate```     |     Name of covariate(s) if there is any.
 ```rmNonP```     |     A logical value indicating whether the non-polimorfic markers must be removed.
-```rmMAF```     |     A logical value indicating whether the non-polimorfic markers must be removed.
+```rmMAF```     |     A logical value indicating whether it should use MAF to remove markers.
 ```rSrcDir```     |     Optional path to the folder where the FaST-LMM programm are.
 ```phenName```     |     It is the name of the phenotype to be analyzed.
 ```MarkerRow```     |     A logical value indicating whether the markers are in rows.
