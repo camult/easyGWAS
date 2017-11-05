@@ -143,7 +143,7 @@ fastlmmGWAS <- function(formula=NULL, geno, phen, IDname, map, nPC=0, useG=FALSE
     PLINK <- set.hwe(PLINK)
     suppressWarnings(PLINK <- select.snps(PLINK, hwe>HWE))
   }
-  nChr <- length(table(PLINK@snps$chr))
+  nChr <- max(PLINK@snps$chr)
   # create map file and data file
   write.bed.matrix(PLINK, "testmarkers", rds=NULL)
   # create principal components file
