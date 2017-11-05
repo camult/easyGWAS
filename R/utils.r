@@ -1,7 +1,6 @@
-#' @title Linear Model for Genome-wide Association Studies
+#' @title Simulation of genotypes, phenotypes and fixed effects
 #' 
-#' @description The lmGWAS (Linear Model for Genome-wide Association Studies) is developed 
-#'              as a package for GWAS based on a single SNP analysis .
+#' @description A very simple tool to simulate genotypes, phenotypes and fixed effects.
 #' 
 #' @param nIDs Number of individuals.
 #' @param nSNPs Number of markers.
@@ -91,7 +90,7 @@ CreateCovarFile <- function(){
   return(covarOut)
 }
 
-RunMainLoop <- function(formula=formula, fastlmmFileName, nPC, useG, nChr){
+RunMainLoop <- function(formula=formula, fastlmmFileName, nPC, useG, nChr, PLINKped){
   #---------------------------------------------------------------------------------------#
   # Running GWAS analyses
   #---------------------------------------------------------------------------------------#
@@ -99,7 +98,11 @@ RunMainLoop <- function(formula=formula, fastlmmFileName, nPC, useG, nChr){
   if(nPC==0){
     if(all(isTRUE(useG) & is.null(formula))){
       covarFileName <- CreateCovarFile()
-      cmd = paste0(fastlmmFileName, " -mpheno 1 -dfile1 testmarkers -dfile1Sim testmarkers -pheno phenotype.txt -SetOutputPrecision 3 -simLearnType Full -out gwas.txt -REML -MaxChromosomeValue ", nChr," -covar ", covarFileName, " 2>log.txt")
+      if(isTRUE(PLINKped)){
+        cmd = paste0(fastlmmFileName, " -mpheno 1 -file1 testmarkers -file1Sim testmarkers -pheno phenotype.txt -SetOutputPrecision 3 -simLearnType Full -out gwas.txt -REML -MaxChromosomeValue ", nChr," -covar ", covarFileName, " 2>log.txt")
+      } else {
+        cmd = paste0(fastlmmFileName, " -mpheno 1 -dfile1 testmarkers -dfile1Sim testmarkers -pheno phenotype.txt -SetOutputPrecision 3 -simLearnType Full -out gwas.txt -REML -MaxChromosomeValue ", nChr," -covar ", covarFileName, " 2>log.txt")
+      }
       if (substr(version$platform, 1, 11) == 'x86_64-w64-') {
         shell(cmd) 
       } else {
@@ -109,7 +112,11 @@ RunMainLoop <- function(formula=formula, fastlmmFileName, nPC, useG, nChr){
     }
     if(all(isTRUE(useG) & !is.null(formula))){
       desingMatrixCOV = desingMatrix(formula)
-      cmd = paste0(fastlmmFileName, " -mpheno 1 -dfile1 testmarkers -dfile1Sim testmarkers -pheno phenotype.txt -SetOutputPrecision 3 -simLearnType Full -out gwas.txt -REML -MaxChromosomeValue ", nChr," -covar ", desingMatrixCOV, " 2>log.txt")
+      if(isTRUE(PLINKped)){
+        cmd = paste0(fastlmmFileName, " -mpheno 1 -file1 testmarkers -file1Sim testmarkers -pheno phenotype.txt -SetOutputPrecision 3 -simLearnType Full -out gwas.txt -REML -MaxChromosomeValue ", nChr," -covar ", desingMatrixCOV, " 2>log.txt")
+      } else {
+        cmd = paste0(fastlmmFileName, " -mpheno 1 -dfile1 testmarkers -dfile1Sim testmarkers -pheno phenotype.txt -SetOutputPrecision 3 -simLearnType Full -out gwas.txt -REML -MaxChromosomeValue ", nChr," -covar ", desingMatrixCOV, " 2>log.txt")
+      }
       if (substr(version$platform, 1, 11) == 'x86_64-w64-') {
         shell(cmd) 
         } else {
@@ -119,7 +126,11 @@ RunMainLoop <- function(formula=formula, fastlmmFileName, nPC, useG, nChr){
     }
     if(all(!isTRUE(useG) & is.null(formula))){
       covarFileName <- CreateCovarFile()
-      cmd = paste0(fastlmmFileName, " -mpheno 1 -dfile1 testmarkers -pheno phenotype.txt -SetOutputPrecision 3 -linreg -out gwas.txt -REML -MaxChromosomeValue ", nChr," -covar ", covarFileName, " 2>log.txt")
+      if(isTRUE(PLINKped)){
+        cmd = paste0(fastlmmFileName, " -mpheno 1 -file1 testmarkers -pheno phenotype.txt -SetOutputPrecision 3 -linreg -out gwas.txt -REML -MaxChromosomeValue ", nChr," -covar ", covarFileName, " 2>log.txt")
+      } else {
+        cmd = paste0(fastlmmFileName, " -mpheno 1 -dfile1 testmarkers -pheno phenotype.txt -SetOutputPrecision 3 -linreg -out gwas.txt -REML -MaxChromosomeValue ", nChr," -covar ", covarFileName, " 2>log.txt")
+      }
       if (substr(version$platform, 1, 11) == 'x86_64-w64-') {
         shell(cmd) 
       } else {
@@ -129,7 +140,11 @@ RunMainLoop <- function(formula=formula, fastlmmFileName, nPC, useG, nChr){
     }
     if(all(!isTRUE(useG) & !is.null(formula))){
       desingMatrixCOV = desingMatrix(formula)
-      cmd = paste0(fastlmmFileName, " -mpheno 1 -dfile1 testmarkers -pheno phenotype.txt -SetOutputPrecision 3 -linreg -out gwas.txt -REML -MaxChromosomeValue ", nChr," -covar ", desingMatrixCOV, " 2>log.txt")
+      if(isTRUE(PLINKped)){
+        cmd = paste0(fastlmmFileName, " -mpheno 1 -file1 testmarkers -pheno phenotype.txt -SetOutputPrecision 3 -linreg -out gwas.txt -REML -MaxChromosomeValue ", nChr," -covar ", desingMatrixCOV, " 2>log.txt")
+      } else {
+        cmd = paste0(fastlmmFileName, " -mpheno 1 -dfile1 testmarkers -pheno phenotype.txt -SetOutputPrecision 3 -linreg -out gwas.txt -REML -MaxChromosomeValue ", nChr," -covar ", desingMatrixCOV, " 2>log.txt")
+      }
       if (substr(version$platform, 1, 11) == 'x86_64-w64-') {
         shell(cmd) 
       } else {
@@ -142,7 +157,11 @@ RunMainLoop <- function(formula=formula, fastlmmFileName, nPC, useG, nChr){
   if(nPC>0){
     if(all(isTRUE(useG) & is.null(formula))){
       pcCovarFileName <-  WritePCCovar(nPC)
-      cmd = paste0(fastlmmFileName, " -mpheno 1 -dfile1 testmarkers -dfile1Sim testmarkers -pheno phenotype.txt -SetOutputPrecision 3 -simLearnType Full -out gwas.txt -REML -MaxChromosomeValue ", nChr," -covar ", pcCovarFileName, " 2>log.txt")
+      if(isTRUE(PLINKped)){
+        cmd = paste0(fastlmmFileName, " -mpheno 1 -file1 testmarkers -file1Sim testmarkers -pheno phenotype.txt -SetOutputPrecision 3 -simLearnType Full -out gwas.txt -REML -MaxChromosomeValue ", nChr," -covar ", pcCovarFileName, " 2>log.txt")
+      } else {
+        cmd = paste0(fastlmmFileName, " -mpheno 1 -dfile1 testmarkers -dfile1Sim testmarkers -pheno phenotype.txt -SetOutputPrecision 3 -simLearnType Full -out gwas.txt -REML -MaxChromosomeValue ", nChr," -covar ", pcCovarFileName, " 2>log.txt")
+      }
       if (substr(version$platform, 1, 11) == 'x86_64-w64-') {
         shell(cmd) 
       } else {
@@ -152,7 +171,11 @@ RunMainLoop <- function(formula=formula, fastlmmFileName, nPC, useG, nChr){
     }
     if(all(isTRUE(useG) & !is.null(formula))){
       desingMatrixCOV <- desingMatrixPC(formula, nPC)
-      cmd = paste0(fastlmmFileName, " -mpheno 1 -dfile1 testmarkers -dfile1Sim testmarkers -pheno phenotype.txt -SetOutputPrecision 3 -simLearnType Full -out gwas.txt -REML -MaxChromosomeValue ", nChr," -covar ", desingMatrixCOV, " 2>log.txt")
+      if(isTRUE(PLINKped)){
+        cmd = paste0(fastlmmFileName, " -mpheno 1 -file1 testmarkers -file1Sim testmarkers -pheno phenotype.txt -SetOutputPrecision 3 -simLearnType Full -out gwas.txt -REML -MaxChromosomeValue ", nChr," -covar ", desingMatrixCOV, " 2>log.txt")
+      } else {
+        cmd = paste0(fastlmmFileName, " -mpheno 1 -dfile1 testmarkers -dfile1Sim testmarkers -pheno phenotype.txt -SetOutputPrecision 3 -simLearnType Full -out gwas.txt -REML -MaxChromosomeValue ", nChr," -covar ", desingMatrixCOV, " 2>log.txt")
+      }
       if (substr(version$platform, 1, 11) == 'x86_64-w64-') {
         shell(cmd) 
       } else {
@@ -162,7 +185,11 @@ RunMainLoop <- function(formula=formula, fastlmmFileName, nPC, useG, nChr){
     }
     if(all(!isTRUE(useG) & is.null(formula))){
       pcCovarFileName <- WritePCCovar(nPC)
-      cmd = paste0(fastlmmFileName, " -mpheno 1 -dfile1 testmarkers -pheno phenotype.txt -SetOutputPrecision 3 -linreg -out gwas.txt -REML -MaxChromosomeValue ", nChr," -covar ", pcCovarFileName, " 2>log.txt")
+      if(isTRUE(PLINKped)){
+        cmd = paste0(fastlmmFileName, " -mpheno 1 -file1 testmarkers -pheno phenotype.txt -SetOutputPrecision 3 -linreg -out gwas.txt -REML -MaxChromosomeValue ", nChr," -covar ", pcCovarFileName, " 2>log.txt")
+      } else {
+        cmd = paste0(fastlmmFileName, " -mpheno 1 -dfile1 testmarkers -pheno phenotype.txt -SetOutputPrecision 3 -linreg -out gwas.txt -REML -MaxChromosomeValue ", nChr," -covar ", pcCovarFileName, " 2>log.txt")
+      }
       if (substr(version$platform, 1, 11) == 'x86_64-w64-') {
         shell(cmd) 
       } else {
@@ -172,7 +199,11 @@ RunMainLoop <- function(formula=formula, fastlmmFileName, nPC, useG, nChr){
     }
     if(all(!isTRUE(useG) & !is.null(formula))){
       desingMatrixCOV <- desingMatrixPC(formula, nPC)
-      cmd = paste0(fastlmmFileName, " -mpheno 1 -dfile1 testmarkers -pheno phenotype.txt -SetOutputPrecision 3 -linreg -out gwas.txt -REML -MaxChromosomeValue ", nChr," -covar ", desingMatrixCOV, " 2>log.txt")
+      if(isTRUE(PLINKped)){
+        cmd = paste0(fastlmmFileName, " -mpheno 1 -file1 testmarkers -pheno phenotype.txt -SetOutputPrecision 3 -linreg -out gwas.txt -REML -MaxChromosomeValue ", nChr," -covar ", desingMatrixCOV, " 2>log.txt")
+      } else {
+        cmd = paste0(fastlmmFileName, " -mpheno 1 -dfile1 testmarkers -pheno phenotype.txt -SetOutputPrecision 3 -linreg -out gwas.txt -REML -MaxChromosomeValue ", nChr," -covar ", desingMatrixCOV, " 2>log.txt")
+      }
       if (substr(version$platform, 1, 11) == 'x86_64-w64-') {
         shell(cmd) 
       } else {

@@ -20,6 +20,7 @@
 #' @param IDname The name of the trait.
 #' @param MarkerRow A logical value indicating whether the markers are in rows. 
 #' @param covariate Name of covariate(s) if there is any.
+#' @param PLINKped A logical value indicating whether PLINK ped format file is used. Not implemented.
 #' 
 #' @return A text file with GWAS statistics. Manhattan plot and QQ-Plot. 
 #' 
@@ -34,7 +35,7 @@
 #'             
 #' @export fastlmmGWAS
 #' @import data.table lattice qqman
-fastlmmGWAS <- function(formula=NULL, genoFileName, phenFileName, IDname,
+fastlmmGWAS <- function(formula=NULL, genoFileName, phenFileName, IDname, PLINKped=FALSE,
                         mapFileName = NULL, nPC=0, useG=FALSE, maf=0.01, covariate=NULL,
                         rmNonP=TRUE, rmMAF=TRUE, rSrcDir=NULL, phenName=NULL, MarkerRow=TRUE){
   cat("\n")
@@ -137,7 +138,6 @@ fastlmmGWAS <- function(formula=NULL, genoFileName, phenFileName, IDname,
                         ID=rownames(phenoDict),
                         phenoDict)
   write.table(outPheno, file = 'phenotype.txt', quote=F, sep = '\t', row.names=F, col.names=F)
-  # Changed: 05-15-2017
   AllEff <- unlist(strsplit(as.character(formula[[3]])," "))[!unlist(strsplit(as.character(formula[[3]])," "))%in%c("+")]
   CatEff <- AllEff[!AllEff%in%covariate]
   phenotypes[CatEff] <- lapply(phenotypes[CatEff] , factor)
@@ -235,9 +235,9 @@ fastlmmGWAS <- function(formula=NULL, genoFileName, phenFileName, IDname,
   sortedMap = suppressWarnings(tempMap[order(as.numeric(as.vector(tempMap$Chr)),
                                              tempMap$Chr, tempMap$PosA, tempMap$markerID), ])
   # create map file and data file
-  write.table(sortedMap, file = 'testmarkers.map', quote=F, sep = '\t', row.names=F, col.names=F)
-  outData = t(apply(sortedMap, 1, function(row) as.vector(dataDict[, row[2]])))
-  write.table(outData, file = 'testmarkers.dat', quote=F, sep = '\t', row.names=T, col.names=F)
+  fwrite(sortedMap, file = 'testmarkers.map', quote=F, sep = '\t', row.names=F, col.names=F)
+  outData = data.frame(t(apply(sortedMap, 1, function(row) as.vector(dataDict[, row[2]]))))
+  fwrite(outData, file = 'testmarkers.dat', quote=F, sep = '\t', row.names=T, col.names=F)
   # create principal components file
   if(nPC>0){
     cat('Computing principal components...\n')
@@ -253,7 +253,7 @@ fastlmmGWAS <- function(formula=NULL, genoFileName, phenFileName, IDname,
     write.table(scores[, 1:100], file = 'pc.txt', quote=F, sep = '\t', row.names=F, col.names=F)
   }
   cat('Running FaST-LMM-GWAS...\n')
-  TK = RunMainLoop(formula=formula, fastlmmFileName=fastlmmFileName, nPC=nPC, useG=useG, nChr=nChr)
+  TK = RunMainLoop(formula=formula, fastlmmFileName=fastlmmFileName, nPC=nPC, useG=useG, nChr=nChr, PLINKped=PLINKped)
   # Cleaning
   resultsNames <- c("Pvalue-GWAS.png","QQPlot-GWAS.png","SNPeff-GWAS.png","gwas.txt","log.txt")
   resultGWAS <- paste0("GWAS_", phenName)
