@@ -42,7 +42,7 @@
 fastlmmGWAS <- function(formula=NULL, geno, phen, IDname, map, nPC=0, useG=FALSE,
                         MAF=0.01, HWE=1e-10, HZ=0.01, SNPcall=0.90, INDcall=0.90, 
                         rmMAF=TRUE, rmHWE=TRUE, rmHZ=TRUE, rmSNPCall=TRUE, rmINDCall=FALSE,
-                        rSrcDir=NULL, phenName=NULL, MarkerRow=TRUE){
+                        rSrcDir=NULL, MarkerRow=TRUE){
   cat("\n")
   centerText <- function() {
     width <- getOption("width")
@@ -95,35 +95,35 @@ fastlmmGWAS <- function(formula=NULL, geno, phen, IDname, map, nPC=0, useG=FALSE
   # Phenotype file
   phenotypes = data.frame(file)
   # Genotype file
-  dataWithIDs = geno
   if(!isTRUE(MarkerRow)){
-    IDs <- dataWithIDs[,1]
-    dataWithIDs <- data.frame(Marker=colnames(dataWithIDs)[-1], t(dataWithIDs[,-1]))
-    colnames(dataWithIDs) <- c("Marker", IDs)
+    geno <- t(geno)
   }
-  # SampleIDs has been changed to unique IDs even if they are repeated
-  sampleIDs <- phenotypes[,IDname]
+  geno <- geno[,order(match(colnames(geno), phenotypes[,1]))]
+  # all(colnames(geno)==phenotypes[,1])
   phenoDict = as.matrix(phenotypes[,phenName])
   mode(phenoDict) <- "numeric"
   colnames(phenoDict) <- phenName
   rownames(phenoDict) = phenotypes[,IDname]
-  data = as.matrix(dataWithIDs)
-  rownames(data) <- rownames(dataWithIDs)
   map <- data.frame(map)
   # create phenotype, fixed effects and fam file
   outPheno = data.frame(Family=1,
                         ID=rownames(phenoDict),
                         phenoDict)
   write.table(outPheno, file = 'phenotype.txt', quote=F, sep = '\t', row.names=F, col.names=F)
-  effect <- model.matrix(model, phenotypes)
+  effect <- unlist(strsplit(as.character(model[[3]])," "))[!unlist(strsplit(as.character(model[[3]])," "))%in%c("+")]
+  if(effect==1){
+    DesMat <- model.matrix(update(model, ~ . -1), phenotypes)
+  } else {
+    DesMat <- model.matrix(model, phenotypes)
+  }
   FixedEffects = data.frame(Family=1,
                             ID=rownames(phenoDict),
-                            effect)
+                            DesMat)
   FixedEffects <- FixedEffects[, !colnames(FixedEffects)%in%phenName]
   write.table(FixedEffects, file = 'FixedEffects.txt', quote=F, sep = '\t', row.names=F, col.names=T)
-  PLINK <- as.bed.matrix(t(data),
+  PLINK <- as.bed.matrix(t(geno),
                          fam=data.frame(famid=1,
-                                        id=colnames(data),
+                                        id=colnames(geno),
                                         father=0,
                                         mother=0,
                                         sex=0,
@@ -140,7 +140,7 @@ fastlmmGWAS <- function(formula=NULL, geno, phen, IDname, map, nPC=0, useG=FALSE
   if(rmINDCall) suppressWarnings(PLINK <- select.inds(PLINK, callrate>INDcall))
   if(rmHZ) suppressWarnings(PLINK <- select.snps(PLINK, hz>HZ))
   if(rmHWE) {
-    PLINK <- set.hwe(PLINK)
+    capture.output(PLINK <- set.hwe(PLINK))
     suppressWarnings(PLINK <- select.snps(PLINK, hwe>HWE))
   }
   nChr <- max(PLINK@snps$chr)
