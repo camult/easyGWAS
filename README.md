@@ -1,21 +1,3 @@
-# easyGWAS
-
-R interface to perform GWAS using Factored Spectrally Transformed Linear Mixed Models (FaST-LMM). FaST-LMM, which stands for Factored Spectrally Transformed Linear Mixed Models is a program for performing single-SNP and SNP-set genome-wide association studies (GWAS) on extremely large data sets. It runs on both Windows and Linux systems, and has been tested on data sets with over 120,000 individuals.
-
-
-# How to Install
-
-To install this package, use devtools:
-
-devtools::install_github("camult/easyGWAS")
-
-
-# Overview
-
-To see the full list of exported functions:
-
-ls(package:easyGWAS)
-
 # `fastlmmGWAS`: Factored Spectrally Transformed Linear Mixed Model GWAS
 
 ## Description
@@ -31,10 +13,11 @@ ls(package:easyGWAS)
 ## Usage
 
 ```r
-fastlmmGWAS(formula = NULL, genoFileName, phenFileName, IDname,
-  mapFileName = NULL, nPC = 0, useG = FALSE, maf = 0.01,
-  covariate = NULL, rmNonP = TRUE, rmMAF = TRUE, rSrcDir = NULL,
-  phenName = NULL, MarkerRow = TRUE)
+fastlmmGWAS(formula = NULL, geno, phen, IDname, map, nPC = 0,
+  useG = FALSE, MAF = 0.01, HWE = 1e-10, HZ = 0.01, SNPcall = 0.9,
+  INDcall = 0.9, rmMAF = TRUE, rmHWE = TRUE, rmHZ = TRUE,
+  rmSNPCall = TRUE, rmINDCall = FALSE, rSrcDir = NULL, phenName = NULL,
+  MarkerRow = TRUE)
 ```
 
 
@@ -43,18 +26,23 @@ fastlmmGWAS(formula = NULL, genoFileName, phenFileName, IDname,
 Argument      |Description
 ------------- |----------------
 ```formula```     |     A formula specifying the model.
-```genoFileName```     |     It is the name of markers file with its extension, i.e., "datafile.txt"
-```phenFileName```     |     It is the name of phenotypes file with its extension, i.e., "phenfile.txt"
-```IDname```     |     The name of the trait.
-```mapFileName```     |     It is the name of map file with its extension, i.e., "mapfile.txt"
+```geno```     |     It is the name of markers file.
+```phen```     |     It is the name of phenotypes file.
+```IDname```     |     It is the individual's name.
+```map```     |     It is the map file with colukns in the following order: Marker, Chromosome and Position.
 ```nPC```     |     Number of principal components if any.
 ```useG```     |     A logical value indicating whether the kinship must be used.
-```maf```     |     A value indicating the minor allele frequency.
-```covariate```     |     Name of covariate(s) if there is any.
-```rmNonP```     |     A logical value indicating whether the non-polimorfic markers must be removed.
-```rmMAF```     |     A logical value indicating whether it should use MAF to remove markers.
+```MAF```     |     A value indicating the Minor Allele Frequency.
+```HWE```     |     A value indicating the Hardy-Weinberg Equilibrium.
+```HZ```     |     A value indicating the SNP heterozygosity.
+```SNPcall```     |     A value indicating the SNP call rate.
+```INDcall```     |     A value indicating the  individual call rate for autosomal SNPs.
+```rmMAF```     |     A logical value indicating whether markers sould be removed based on MAF.
+```rmHWE```     |     A logical value indicating whether markers sould be removed based on HWE.
+```rmHZ```     |     A logical value indicating whether markers sould be removed based on HZ.
+```rmSNPCall```     |     A logical value indicating markers sould be removed based on SNP call rate.
+```rmINDCall```     |     A logical value indicating markers sould be removed based on individual call rate.
 ```rSrcDir```     |     Optional path to the folder where the FaST-LMM programm are.
-```phenName```     |     It is the name of the phenotype to be analyzed.
 ```MarkerRow```     |     A logical value indicating whether the markers are in rows.
 
 ## Value

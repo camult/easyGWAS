@@ -4,39 +4,48 @@
 \alias{fastlmmGWAS}
 \title{Factored Spectrally Transformed Linear Mixed Model GWAS}
 \usage{
-fastlmmGWAS(formula = NULL, genoFileName, phenFileName, MarkerType, IDname,
-  mapFileName = NULL, nPC = 0, useG = FALSE, maf = 0.01,
-  covariate = NULL, rmNonP = TRUE, rmMAF = TRUE, rSrcDir = NULL,
-  phenName = NULL, MarkerRow = TRUE)
+fastlmmGWAS(formula = NULL, geno, phen, IDname, map, nPC = 0,
+  useG = FALSE, MAF = 0.01, HWE = 1e-10, HZ = 0.01, SNPcall = 0.9,
+  INDcall = 0.9, rmMAF = TRUE, rmHWE = TRUE, rmHZ = TRUE,
+  rmSNPCall = TRUE, rmINDCall = FALSE, rSrcDir = NULL, phenName = NULL,
+  MarkerRow = TRUE)
 }
 \arguments{
 \item{formula}{A formula specifying the model.}
 
-\item{genoFileName}{It is the name of markers file with its extension, i.e., "datafile.txt"}
+\item{geno}{It is the name of markers file.}
 
-\item{phenFileName}{It is the name of phenotypes file with its extension, i.e., "phenfile.txt"}
+\item{phen}{It is the name of phenotypes file.}
 
-\item{MarkerType}{Use "SNP" or "AFLP".}
+\item{IDname}{It is the individual's name.}
 
-\item{IDname}{The name of the trait.}
-
-\item{mapFileName}{It is the name of map file with its extension, i.e., "mapfile.txt"}
+\item{map}{It is the map file with colukns in the following order: Marker, Chromosome and Position.}
 
 \item{nPC}{Number of principal components if any.}
 
 \item{useG}{A logical value indicating whether the kinship must be used.}
 
-\item{maf}{A value indicating the minor allele frequency.}
+\item{MAF}{A value indicating the Minor Allele Frequency.}
 
-\item{covariate}{Name of covariate(s) if there is any.}
+\item{HWE}{A value indicating the Hardy-Weinberg Equilibrium.}
 
-\item{rmNonP}{A logical value indicating whether the non-polimorfic markers must be removed.}
+\item{HZ}{A value indicating the SNP heterozygosity.}
 
-\item{rmMAF}{A logical value indicating whether the non-polimorfic markers must be removed.}
+\item{SNPcall}{A value indicating the SNP call rate.}
+
+\item{INDcall}{A value indicating the  individual call rate for autosomal SNPs.}
+
+\item{rmMAF}{A logical value indicating whether markers sould be removed based on MAF.}
+
+\item{rmHWE}{A logical value indicating whether markers sould be removed based on HWE.}
+
+\item{rmHZ}{A logical value indicating whether markers sould be removed based on HZ.}
+
+\item{rmSNPCall}{A logical value indicating markers sould be removed based on SNP call rate.}
+
+\item{rmINDCall}{A logical value indicating markers sould be removed based on individual call rate.}
 
 \item{rSrcDir}{Optional path to the folder where the FaST-LMM programm are.}
-
-\item{phenName}{It is the name of the phenotype to be analyzed.}
 
 \item{MarkerRow}{A logical value indicating whether the markers are in rows.}
 }
