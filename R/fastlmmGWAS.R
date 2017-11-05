@@ -13,16 +13,16 @@
 #' @param IDname It is the individual's name.
 #' @param nPC Number of principal components if any.
 #' @param useG A logical value indicating whether the kinship must be used. 
-#' @param MAF A value indicating the Minor Allele Frequency.
-#' @param HWE A value indicating the Hardy-Weinberg Equilibrium.
-#' @param HZ A value indicating the SNP heterozygosity.
-#' @param SNPcall A value indicating the SNP call rate.
-#' @param INDcall A value indicating the  individual call rate for autosomal SNPs.
-#' @param rmMAF A logical value indicating whether markers sould be removed based on MAF. 
-#' @param rmHWE A logical value indicating whether markers sould be removed based on HWE.
-#' @param rmHZ A logical value indicating whether markers sould be removed based on HZ. 
-#' @param rmSNPCall A logical value indicating markers sould be removed based on SNP call rate. 
-#' @param rmINDCall A logical value indicating markers sould be removed based on individual call rate. 
+#' @param MAF A value indicating the Minor Allele Frequency cutoff threshold.
+#' @param HWE A value indicating the Hardy-Weinberg Equilibrium cutoff threshold.
+#' @param HZ A value indicating the SNP heterozygosity cutoff threshold.
+#' @param SNPcall A value indicating the SNP call rate cutoff threshold.
+#' @param INDcall A value indicating the  individual call rate for autosomal SNP cutoff threshold.
+#' @param rmMAF A logical value indicating whether markers sould be removed based on MAF cutoff threshold. 
+#' @param rmHWE A logical value indicating whether markers sould be removed based on HWE cutoff threshold.
+#' @param rmHZ A logical value indicating whether markers sould be removed based on HZ cutoff threshold. 
+#' @param rmSNPCall A logical value indicating whether markers sould be removed based on SNP call rate cutoff threshold. 
+#' @param rmINDCall A logical value indicating whether markers sould be removed based on individual call rate cutoff threshold. 
 #' @param rSrcDir Optional path to the folder where the FaST-LMM programm are. 
 #' @param MarkerRow A logical value indicating whether the markers are in rows. 
 #' 
