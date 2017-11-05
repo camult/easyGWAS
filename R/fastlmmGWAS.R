@@ -7,20 +7,24 @@
 #'              and has been tested on data sets with over 120,000 individuals.
 #' 
 #' @param formula A formula specifying the model.
-#' @param genoFileName It is the name of markers file with its extension, i.e., "datafile.txt"
-#' @param phenFileName It is the name of phenotypes file with its extension, i.e., "phenfile.txt"
-#' @param mapFileName It is the name of map file with its extension, i.e., "mapfile.txt"
+#' @param geno It is the name of markers file.
+#' @param phen It is the name of phenotypes file.
+#' @param map It is the map file with colukns in the following order: Marker, Chromosome and Position.
+#' @param IDname It is the individual's name.
 #' @param nPC Number of principal components if any.
-#' @param rmNonP A logical value indicating whether the non-polimorfic markers must be removed.
-#' @param rmMAF A logical value indicating whether the non-polimorfic markers must be removed. 
 #' @param useG A logical value indicating whether the kinship must be used. 
-#' @param maf A value indicating the minor allele frequency.
-#' @param phenName It is the name of the phenotype to be analyzed.
+#' @param MAF A value indicating the Minor Allele Frequency.
+#' @param HWE A value indicating the Hardy-Weinberg Equilibrium.
+#' @param HZ A value indicating the SNP heterozygosity.
+#' @param SNPcall A value indicating the SNP call rate.
+#' @param INDcall A value indicating the  individual call rate for autosomal SNPs.
+#' @param rmMAF A logical value indicating whether markers sould be removed based on MAF. 
+#' @param rmHWE A logical value indicating whether markers sould be removed based on HWE.
+#' @param rmHZ A logical value indicating whether markers sould be removed based on HZ. 
+#' @param rmSNPCall A logical value indicating markers sould be removed based on SNP call rate. 
+#' @param rmINDCall A logical value indicating markers sould be removed based on individual call rate. 
 #' @param rSrcDir Optional path to the folder where the FaST-LMM programm are. 
-#' @param IDname The name of the trait.
 #' @param MarkerRow A logical value indicating whether the markers are in rows. 
-#' @param covariate Name of covariate(s) if there is any.
-#' @param PLINKped A logical value indicating whether PLINK ped format file is used. Not implemented.
 #' 
 #' @return A text file with GWAS statistics. Manhattan plot and QQ-Plot. 
 #' 
@@ -34,10 +38,11 @@
 #'             Scientific Reports 4, 6874, Nov 2014 (doi:10.1038/srep06874).
 #'             
 #' @export fastlmmGWAS
-#' @import data.table lattice qqman
-fastlmmGWAS <- function(formula=NULL, genoFileName, phenFileName, IDname, PLINKped=FALSE,
-                        mapFileName = NULL, nPC=0, useG=FALSE, maf=0.01, covariate=NULL,
-                        rmNonP=TRUE, rmMAF=TRUE, rSrcDir=NULL, phenName=NULL, MarkerRow=TRUE){
+#' @import data.table lattice qqman gaston
+fastlmmGWAS <- function(formula=NULL, geno, phen, IDname, map, nPC=0, useG=FALSE,
+                        MAF=0.01, HWE=1e-10, HZ=0.01, SNPcall=0.90, INDcall=0.90, 
+                        rmMAF=TRUE, rmHWE=TRUE, rmHZ=TRUE, rmSNPCall=TRUE, rmINDCall=FALSE,
+                        rSrcDir=NULL, phenName=NULL, MarkerRow=TRUE){
   cat("\n")
   centerText <- function() {
     width <- getOption("width")
@@ -66,22 +71,17 @@ fastlmmGWAS <- function(formula=NULL, genoFileName, phenFileName, IDname, PLINKp
   } else {
     stop('Unsupported architecture or operating system')
   }
-  if(!is.null(formula)){
-    form <- formula
-    phenName <- as.character(form[[2]])
+  model <- formula
+  phenName  <- unlist(strsplit(as.character(model[[2]])," "))[!unlist(strsplit(as.character(model[[2]])," "))%in%c("|")]
+  effect <- unlist(strsplit(as.character(model[[3]])," "))[!unlist(strsplit(as.character(model[[3]])," "))%in%c("+")]
+  if("1"%in%effect){
+    file <- phen[, c(IDname, phenName)]
+    colnames(file) <- c(IDname, phenName)
   }else{
-    phenName <- phenName
-    form <- formula(paste(phenName," ~ 1"))
+    file <- phen[, c(IDname, phenName, effect)]
+    colnames(file) <- c(IDname, phenName, effect)
   }
-  rmNonP <- rmNonP
-  rmMAF <- rmMAF
-  useG <- useG
-  data_file <- normalizePath(genoFileName)
-  phenotype_file <- normalizePath(phenFileName)
-  map_file <- mapFileName
-  if (length(map_file) != 0){
-    map_file = normalizePath(map_file)	
-  }
+  file <- file[, !duplicated(colnames(file))]
   # get the filename of the executable for this OS
   if (substr(version$platform, 1, 11) == 'x86_64-w64-'){
     fastlmmFileName = file.path(rSrcDir, 'fastlmmC.exe')
@@ -93,167 +93,76 @@ fastlmmGWAS <- function(formula=NULL, genoFileName, phenFileName, IDname, PLINKp
   }
   cat('Preparing inputs for FaST-LMM-GWAS...\n')
   # Phenotype file
-  phenotypes = data.frame(fread(phenotype_file, head=TRUE))
+  phenotypes = data.frame(file)
   # Genotype file
-  dataWithIDs = as.matrix(fread(data_file, head=TRUE, showProgress=F))
+  dataWithIDs = geno
   if(!isTRUE(MarkerRow)){
     IDs <- dataWithIDs[,1]
     dataWithIDs <- data.frame(Marker=colnames(dataWithIDs)[-1], t(dataWithIDs[,-1]))
     colnames(dataWithIDs) <- c("Marker", IDs)
   }
   # SampleIDs has been changed to unique IDs even if they are repeated
-  if(nrow(phenotypes)>length(unique(phenotypes[,IDname]))){
-    repeated <- function(phenData, genoData){
-      #nRep <- nrow(phenData)/length(unique(phenData[,1]))
-      #Rep <- sort(rep(1:nRep, length(unique(phenotypes[,1]))))
-      #phenData$Rep <- Rep
-      #formula <- update(form, ~ . + Rep)
-      repeatedIDs <- phenData[,IDname]
-      sampleIDs <- unique(phenData[,IDname])
-      markerIDs <- genoData[,1]
-      nRepeated <- length(repeatedIDs)/length(sampleIDs)
-      fakeIDs   <- paste("fakeIDs", 1:length(repeatedIDs), sep="_")
-      auxMarkers <- genoData[,-1]
-      repeatMarkers = sapply(repeatedIDs, function(id) c(auxMarkers[,colnames(auxMarkers)%in%id]) )
-      colnames(repeatMarkers) <- fakeIDs
-      phenData[,IDname] <- fakeIDs
-      repeatMarkers <- cbind(markerIDs, repeatMarkers)
-      return(list(phenData=phenData, genoData=repeatMarkers))
-    }
-    repIDs <- repeated(phenData=phenotypes, genoData=dataWithIDs)
-    phenotypes <- repIDs$phenData
-    dataWithIDs <- repIDs$genoData
-    rm(repIDs)
-  }
   sampleIDs <- phenotypes[,IDname]
   phenoDict = as.matrix(phenotypes[,phenName])
   mode(phenoDict) <- "numeric"
   colnames(phenoDict) <- phenName
   rownames(phenoDict) = phenotypes[,IDname]
-  rownames(dataWithIDs) <- dataWithIDs[, 1]
-  data = as.matrix(dataWithIDs[, -1])
+  data = as.matrix(dataWithIDs)
   rownames(data) <- rownames(dataWithIDs)
+  map <- data.frame(map)
   # create phenotype, fixed effects and fam file
   outPheno = data.frame(Family=1,
                         ID=rownames(phenoDict),
                         phenoDict)
   write.table(outPheno, file = 'phenotype.txt', quote=F, sep = '\t', row.names=F, col.names=F)
-  AllEff <- unlist(strsplit(as.character(formula[[3]])," "))[!unlist(strsplit(as.character(formula[[3]])," "))%in%c("+")]
-  CatEff <- AllEff[!AllEff%in%covariate]
-  phenotypes[CatEff] <- lapply(phenotypes[CatEff] , factor)
-  #--------------------#
-  if(!is.null(formula)){
-    effect <- model.matrix(update(formula, ~ . -1), phenotypes)
-    FixedEffects = data.frame(Family=1,
-                              ID=rownames(phenoDict),
-                              effect)
-    FixedEffects <- FixedEffects[, !colnames(FixedEffects)%in%phenName]
-    write.table(FixedEffects, file = 'FixedEffects.txt', quote=F, sep = '\t', row.names=F, col.names=T)
-  }
-  outFam = data.frame(Family=1,
-                      Individual=rownames(phenoDict),
-                      Father=0,
-                      Mother=0,
-                      Sex=0,
-                      Phenotype=-9)
-  write.table(outFam, file = 'testmarkers.fam', quote=F, sep = '\t', row.names=F, col.names=F)
+  effect <- model.matrix(model, phenotypes)
+  FixedEffects = data.frame(Family=1,
+                            ID=rownames(phenoDict),
+                            effect)
+  FixedEffects <- FixedEffects[, !colnames(FixedEffects)%in%phenName]
+  write.table(FixedEffects, file = 'FixedEffects.txt', quote=F, sep = '\t', row.names=F, col.names=T)
+  PLINK <- as.bed.matrix(t(data),
+                         fam=data.frame(famid=1,
+                                        id=colnames(data),
+                                        father=0,
+                                        mother=0,
+                                        sex=0,
+                                        pheno=-9),
+                         bim=data.frame(chr=map[,2],
+                                        id=map[,1],
+                                        dist=0,
+                                        pos=map[,3],
+                                        A1="A",
+                                        A2="B"))
   # Quality Control Filter
-  # Non-polymorphic Data
-  if(rmNonP) NonP <- apply(data, 1, sd, na.rm=T)
-  # Minor allele frequency
-  if(rmMAF){
-    n0 <- apply(data==0,1,sum,na.rm=T)
-    n1 <- apply(data==1,1,sum,na.rm=T)
-    n2 <- apply(data==2,1,sum,na.rm=T)
-    p  <- ((2*n0)+n1)/(2*(n0+n1+n2))
-    mafOut <- as.matrix(pmin(p, 1-p))
+  if(rmMAF) suppressWarnings(PLINK <- select.snps(PLINK, maf>MAF))
+  if(rmSNPCall) suppressWarnings(PLINK <- select.snps(PLINK, callrate>SNPcall))
+  if(rmINDCall) suppressWarnings(PLINK <- select.inds(PLINK, callrate>INDcall))
+  if(rmHZ) suppressWarnings(PLINK <- select.snps(PLINK, hz>HZ))
+  if(rmHWE) {
+    PLINK <- set.hwe(PLINK)
+    suppressWarnings(PLINK <- select.snps(PLINK, hwe>HWE))
   }
-  # Apply quality control filter if any
-  if(all(rmNonP, rmMAF)){
-    data <- data[(NonP!=0 & mafOut>=maf), ]
-  } 
-  if(isTRUE(rmNonP)&!isTRUE(rmMAF)){
-    data <- data[(NonP!=0), ]
-  }
-  if(!isTRUE(rmNonP)&isTRUE(rmMAF)){
-    data <- data[(mafOut>=maf), ]
-  }
-  # Map and genotype files
-  markerIDs <- rownames(data)
-  nSNPs <- length(markerIDs)
-  ReadMapFile <- function(map_file, rSrcDir){
-    if (length(map_file) == 0){
-      cat("  creating a fake map file\n")
-      chr=rep(c(1:4), (nSNPs/4))
-      nChr <- length(chr)
-      if(nChr!=nSNPs){
-        if(nChr>nSNPs){
-          dif <- abs(nSNPs-nChr)+1
-          chr <- chr[-c(1:dif)]
-        }else{
-          dif <- abs(nSNPs-nChr)
-          chr <- c(rep(1, dif), chr)
-        }
-      }
-      chrDict        <- chr
-      names(chrDict) <- rownames(data)
-      posDict        <- as.integer((1:nrow(data))*100000)
-      names(posDict) <- rownames(data)
-    } else {
-      cat("  reading in map file:", map_file, '\n')
-      map = read.table(map_file, FALSE)
-      chrDict = map[,2]
-      names(chrDict) = map[,1]
-      posDict = map[,3]
-      names(posDict) = map[,2]
-    }
-    return(list(ChrDict = chrDict, PosDict = posDict))
-  }
-  map = ReadMapFile(map_file, rSrcDir)
-  # remove rows with probe ID not found in map file
-  rowsToKeep = markerIDs %in% names(map$ChrDict)
-  numFound = sum(rowsToKeep)
-  numMissing = sum(!rowsToKeep)
-  markerIDs = markerIDs[rowsToKeep]
-  data = data[rowsToKeep, ]
-  mode(data) <- "numeric"
-  cat("  number of missing map markers =", numMissing, '\n')
-  cat("  number of markers =", numFound, '\n')
-  if (numFound == 0) stop("no mapping information found for any markers")
-  # get genotype file contents
-  dataDict = as.data.frame(apply(data, 1, function(row){
-    return(append(c('A', 'B'), row))
-  }))
-  names(dataDict) = markerIDs
-  rownames(dataDict) = append(c('A', 'B'), sampleIDs)
-  # get sorted map file contents
-  rowsToKeep = names(map$ChrDict) %in% markerIDs
-  chr = map$ChrDict[rowsToKeep]
-  nChr = length(unique(chr))
-  pos = map$PosDict[rowsToKeep]
-  tempMap = data.frame(Chr = chr, markerID = names(chr), PosA = pos, PosB = pos)
-  sortedMap = suppressWarnings(tempMap[order(as.numeric(as.vector(tempMap$Chr)),
-                                             tempMap$Chr, tempMap$PosA, tempMap$markerID), ])
+  nChr <- length(table(PLINK@snps$chr))
   # create map file and data file
-  fwrite(sortedMap, file = 'testmarkers.map', quote=F, sep = '\t', row.names=F, col.names=F)
-  outData = data.frame(t(apply(sortedMap, 1, function(row) as.vector(dataDict[, row[2]]))))
-  fwrite(outData, file = 'testmarkers.dat', quote=F, sep = '\t', row.names=T, col.names=F)
+  write.bed.matrix(PLINK, "testmarkers", rds=NULL)
   # create principal components file
   if(nPC>0){
-    cat('Computing principal components...\n')
-    pcData = outData[, 3:ncol(outData)]
-    mode(pcData) = 'numeric'
-    dataM = apply(pcData, 1, function(row){
-      average = mean(row, na.rm = TRUE)
-      return(row - average)
-    })
-    cat("  number of PC used =", nPC, '\n')
-    X = svd(dataM) #  singular value decomposition
-    scores = t(apply(X$u, 1, function(row) row * sqrt(X$d)))
-    write.table(scores[, 1:100], file = 'pc.txt', quote=F, sep = '\t', row.names=F, col.names=F)
+    # Compute Genetic Relationship Matrix
+    standardize(PLINK) <- "p"
+    K <- GRM(PLINK)
+    # Eigen decomposition
+    eiK <- eigen(K)
+    # deal with small negative eigen values
+    eiK$values[ eiK$values < 0 ] <- 0
+    # Note: the eigenvectors are normalized, to compute 'true' PCs
+    # multiply them by the square root of the associated eigenvalues
+    cat('Computing principal components using the genomic relationship matrix...\n')
+    PC <- sweep(eiK$vectors, 2, sqrt(eiK$values), "*")
+    write.table(PC, file = 'pc.txt', quote=F, sep = '\t', row.names=F, col.names=F)
   }
   cat('Running FaST-LMM-GWAS...\n')
-  TK = RunMainLoop(formula=formula, fastlmmFileName=fastlmmFileName, nPC=nPC, useG=useG, nChr=nChr, PLINKped=PLINKped)
+  TK = RunMainLoop(formula=formula, fastlmmFileName=fastlmmFileName, nPC=nPC, useG=useG, nChr=nChr)
   # Cleaning
   resultsNames <- c("Pvalue-GWAS.png","QQPlot-GWAS.png","SNPeff-GWAS.png","gwas.txt","log.txt")
   resultGWAS <- paste0("GWAS_", phenName)
@@ -268,7 +177,7 @@ fastlmmGWAS <- function(formula=NULL, genoFileName, phenFileName, IDname, PLINKp
     file.copy(from=FileListSource, to=FileListEnd)
   }
   invisible(sapply(resultsNames, CopyFile))
-  ToRemove <- c("covariates_pc.txt","covariates.txt","testmarkers.map","testmarkers.dat","testmarkers.fam",
+  ToRemove <- c("covariates_pc.txt","covariates.txt","testmarkers.bim","testmarkers.bed","testmarkers.fam",
                 "phenotype.txt","FixedEffects.txt","pc.txt","desingMatrix.txt","desingMatrixPC.txt")
   suppressWarnings(invisible(file.remove(ToRemove, resultsNames)))
   cat("\n")
