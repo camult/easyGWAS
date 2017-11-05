@@ -92,20 +92,16 @@ fastlmmGWAS <- function(formula=NULL, geno, phen, IDname, map, nPC=0, useG=FALSE
     stop('Unsupported architecture or operating system')
   }
   cat('Preparing inputs for FaST-LMM-GWAS...\n')
-  # Phenotype file
   phenotypes = data.frame(file)
-  # Genotype file
   if(!isTRUE(MarkerRow)){
     geno <- t(geno)
   }
   geno <- geno[,order(match(colnames(geno), phenotypes[,1]))]
-  # all(colnames(geno)==phenotypes[,1])
   phenoDict = as.matrix(phenotypes[,phenName])
   mode(phenoDict) <- "numeric"
   colnames(phenoDict) <- phenName
   rownames(phenoDict) = phenotypes[,IDname]
   map <- data.frame(map)
-  # create phenotype, fixed effects and fam file
   outPheno = data.frame(Family=1,
                         ID=rownames(phenoDict),
                         phenoDict)
@@ -134,36 +130,27 @@ fastlmmGWAS <- function(formula=NULL, geno, phen, IDname, map, nPC=0, useG=FALSE
                                         pos=map[,3],
                                         A1="A",
                                         A2="B"))
-  # Quality Control Filter
   if(rmMAF) suppressWarnings(PLINK <- select.snps(PLINK, maf>MAF))
   if(rmSNPCall) suppressWarnings(PLINK <- select.snps(PLINK, callrate>SNPcall))
   if(rmINDCall) suppressWarnings(PLINK <- select.inds(PLINK, callrate>INDcall))
   if(rmHZ) suppressWarnings(PLINK <- select.snps(PLINK, hz>HZ))
   if(rmHWE) {
-    capture.output(PLINK <- set.hwe(PLINK))
+    PLINK <- set.hwe(PLINK, method="exact", verbose=FALSE)
     suppressWarnings(PLINK <- select.snps(PLINK, hwe>HWE))
   }
   nChr <- max(PLINK@snps$chr)
-  # create map file and data file
   write.bed.matrix(PLINK, "testmarkers", rds=NULL)
-  # create principal components file
   if(nPC>0){
-    # Compute Genetic Relationship Matrix
     standardize(PLINK) <- "p"
     K <- GRM(PLINK)
-    # Eigen decomposition
     eiK <- eigen(K)
-    # deal with small negative eigen values
     eiK$values[ eiK$values < 0 ] <- 0
-    # Note: the eigenvectors are normalized, to compute 'true' PCs
-    # multiply them by the square root of the associated eigenvalues
-    cat('Computing principal components using the genomic relationship matrix...\n')
+     cat('Computing principal components using the genomic relationship matrix...\n')
     PC <- sweep(eiK$vectors, 2, sqrt(eiK$values), "*")
     write.table(PC, file = 'pc.txt', quote=F, sep = '\t', row.names=F, col.names=F)
   }
   cat('Running FaST-LMM-GWAS...\n')
   TK = RunMainLoop(formula=formula, fastlmmFileName=fastlmmFileName, nPC=nPC, useG=useG, nChr=nChr)
-  # Cleaning
   resultsNames <- c("Pvalue-GWAS.png","QQPlot-GWAS.png","SNPeff-GWAS.png","gwas.txt","log.txt")
   resultGWAS <- paste0("GWAS_", phenName)
   if(!dir.exists(resultGWAS)){
